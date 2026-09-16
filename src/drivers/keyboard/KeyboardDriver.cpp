@@ -2,8 +2,9 @@
 #include "storagemanager.h"
 #include "drivers/shared/driverhelper.h"
 #include "drivers/hid/HIDDescriptors.h"
-
 #include "eventmanager.h"
+#include "BoardConfig.h"
+#include "pico/time.h"
 
 void KeyboardDriver::initialize() {
 	keyboardReport = {
@@ -22,12 +23,10 @@ void KeyboardDriver::initialize() {
 		.xfer_cb = hidd_xfer_cb,
 		.sof = NULL
 	};
-
     // Handle Volume for Rotary Encoder
     EventManager::getInstance().registerEventHandler(GP_EVENT_ENCODER_CHANGE, GPEVENT_CALLBACK(this->handleEncoder(event)));
     volumeChange = 0; // no change
 }
-
 uint8_t KeyboardDriver::getModifier(uint8_t code) {
 	switch (code) {
 		case HID_KEY_CONTROL_LEFT : return KEYBOARD_MODIFIER_LEFTCTRL  ;
@@ -39,7 +38,6 @@ uint8_t KeyboardDriver::getModifier(uint8_t code) {
 		case HID_KEY_ALT_RIGHT    : return KEYBOARD_MODIFIER_RIGHTALT  ;
 		case HID_KEY_GUI_RIGHT    : return KEYBOARD_MODIFIER_RIGHTGUI  ;
 	}
-
 	return 0;
 }
 
@@ -56,10 +54,59 @@ uint8_t KeyboardDriver::getMultimedia(uint8_t code) {
 	return 0;
 }
 
-
 bool KeyboardDriver::process(Gamepad * gamepad) {
 	const KeyboardMapping& keyboardMapping = Storage::getInstance().getKeyboardMapping();
 	releaseAllKeys();
+
+#ifdef MISTER_MENU_SHORT_LONG_ENABLED
+    const uint32_t nowMs = to_ms_since_boot(get_absolute_time());
+    const bool misterMenuPressed = gamepad->pressedA1();
+
+    // Start timing on the press edge. Nothing is sent yet because this may
+    // become a long press.
+    if (misterMenuPressed && !misterMenuWasPressed) {
+        misterMenuPressStartMs = nowMs;
+        misterMenuLongTriggered = false;
+        misterMenuPulseType = 0;
+    }
+
+    // Long press fires while the button is still held.
+    if (misterMenuPressed && !misterMenuLongTriggered &&
+        (uint32_t)(nowMs - misterMenuPressStartMs) >= MISTER_MENU_LONG_PRESS_MS) {
+        misterMenuLongTriggered = true;
+        misterMenuPulseType = 2;
+        misterMenuPulseStartMs = nowMs;
+    }
+
+    // On release, choose short vs long from the actual hold duration.
+    // Normally a long press has already fired while held; this also covers
+    // the exact threshold boundary if a loop iteration was delayed.
+    if (!misterMenuPressed && misterMenuWasPressed && !misterMenuLongTriggered) {
+        if ((uint32_t)(nowMs - misterMenuPressStartMs) >= MISTER_MENU_LONG_PRESS_MS) {
+            misterMenuLongTriggered = true;
+            misterMenuPulseType = 2;
+        } else {
+            misterMenuPulseType = 1;
+        }
+        misterMenuPulseStartMs = nowMs;
+    }
+
+    misterMenuWasPressed = misterMenuPressed;
+
+    // Keep the generated key/combo active for a short pulse so the host has
+    // ample time to observe it even if a USB report is briefly unavailable.
+    if (misterMenuPulseType != 0) {
+        if ((uint32_t)(nowMs - misterMenuPulseStartMs) < MISTER_MENU_KEY_PULSE_MS) {
+            if (misterMenuPulseType == 1) {
+                pressMisterMenuShortAction();
+            } else {
+                pressMisterMenuLongAction();
+            }
+        } else {
+            misterMenuPulseType = 0;
+        }
+    }
+#endif
 	if(gamepad->pressedUp())     { pressKey(keyboardMapping.keyDpadUp); }
 	if(gamepad->pressedDown())   { pressKey(keyboardMapping.keyDpadDown); }
 	if(gamepad->pressedLeft())	{ pressKey(keyboardMapping.keyDpadLeft); }
@@ -76,7 +123,9 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
 	if(gamepad->pressedS2()) 	{ pressKey(keyboardMapping.keyButtonS2); }
 	if(gamepad->pressedL3()) 	{ pressKey(keyboardMapping.keyButtonL3); }
 	if(gamepad->pressedR3()) 	{ pressKey(keyboardMapping.keyButtonR3); }
+#ifndef MISTER_MENU_SHORT_LONG_ENABLED
 	if(gamepad->pressedA1()) 	{ pressKey(keyboardMapping.keyButtonA1); }
+#endif
 	if(gamepad->pressedA2()) 	{ pressKey(keyboardMapping.keyButtonA2); }
 	if(gamepad->pressedA3()) 	{ pressKey(keyboardMapping.keyButtonA3); }
 	if(gamepad->pressedA4()) 	{ pressKey(keyboardMapping.keyButtonA4); }
@@ -92,7 +141,6 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
 	if(gamepad->pressedE10()) 	{ pressKey(keyboardMapping.keyButtonE10); }
 	if(gamepad->pressedE11()) 	{ pressKey(keyboardMapping.keyButtonE11); }
 	if(gamepad->pressedE12()) 	{ pressKey(keyboardMapping.keyButtonE12); }
-
     if( volumeChange > 0 ) {
         pressKey(KEYBOARD_MULTIMEDIA_VOLUME_UP);
     } else if ( volumeChange < 0 ) {
@@ -102,26 +150,23 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
 	// Wake up TinyUSB device
 	if (tud_suspended())
 		tud_remote_wakeup();
-
 	void *keyboard_report_payload;
 	uint16_t keyboard_report_size;
 	if ( keyboardReport.reportId == KEYBOARD_KEY_REPORT_ID ) {
 		keyboard_report_payload = (void *)keyboardReport.keycode;
 		keyboard_report_size = sizeof(KeyboardReport::keycode);
-		
+
 	} else {
 		keyboard_report_payload = (void *)&keyboardReport.multimedia;
 		keyboard_report_size = sizeof(KeyboardReport::multimedia);
 	}
-
 	// If we had a keycode but now have a multimedia key OR report is different
-	if (keyboard_report_size != last_report_size || 
+	if (keyboard_report_size != last_report_size ||
 			memcmp(last_report, &keyboardReport, last_report_size) != 0) {
 		if (tud_hid_ready()) {
 			if ( tud_hid_report(keyboardReport.reportId, keyboard_report_payload, keyboard_report_size) ) {
 				memcpy(last_report, keyboard_report_payload, keyboard_report_size);
 				last_report_size = keyboard_report_size;
-
                 // Adjust volume on success
                 if( volumeChange > 0 ) {
                     volumeChange--;
@@ -132,8 +177,31 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
 			}
 		}
 	}
-	
+
 	return false;
+}
+void KeyboardDriver::pressMisterMenuShortAction() {
+#ifdef MISTER_MENU_SHORT_KEY_1
+    pressKey(MISTER_MENU_SHORT_KEY_1);
+#endif
+#ifdef MISTER_MENU_SHORT_KEY_2
+    pressKey(MISTER_MENU_SHORT_KEY_2);
+#endif
+#ifdef MISTER_MENU_SHORT_KEY_3
+    pressKey(MISTER_MENU_SHORT_KEY_3);
+#endif
+}
+
+void KeyboardDriver::pressMisterMenuLongAction() {
+#ifdef MISTER_MENU_LONG_KEY_1
+    pressKey(MISTER_MENU_LONG_KEY_1);
+#endif
+#ifdef MISTER_MENU_LONG_KEY_2
+    pressKey(MISTER_MENU_LONG_KEY_2);
+#endif
+#ifdef MISTER_MENU_LONG_KEY_3
+    pressKey(MISTER_MENU_LONG_KEY_3);
+#endif
 }
 
 void KeyboardDriver::pressKey(uint8_t code) {
@@ -145,14 +213,12 @@ void KeyboardDriver::pressKey(uint8_t code) {
 		keyboardReport.keycode[code / 8] |= 1 << (code % 8);
 	}
 }
-
 void KeyboardDriver::releaseAllKeys(void) {
 	for (uint8_t i = 0; i < (sizeof(keyboardReport.keycode) / sizeof(keyboardReport.keycode[0])); i++) {
 		keyboardReport.keycode[i] = 0;
 	}
 	keyboardReport.multimedia = 0;
 }
-
 // tud_hid_get_report_cb
 uint16_t KeyboardDriver::get_report(uint8_t report_id, hid_report_type_t report_type, uint8_t *buffer, uint16_t reqlen) {
 	if ( report_id == KEYBOARD_KEY_REPORT_ID ) {
@@ -163,7 +229,6 @@ uint16_t KeyboardDriver::get_report(uint8_t report_id, hid_report_type_t report_
 		return sizeof(KeyboardReport::multimedia);
 	}
 }
-
 // Only PS4 does anything with set report
 void KeyboardDriver::set_report(uint8_t report_id, hid_report_type_t report_type, uint8_t const *buffer, uint16_t bufsize) {}
 
@@ -171,7 +236,6 @@ void KeyboardDriver::set_report(uint8_t report_id, hid_report_type_t report_type
 bool KeyboardDriver::vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const *request) {
     return false;
 }
-
 const uint16_t * KeyboardDriver::get_descriptor_string_cb(uint8_t index, uint16_t langid) {
 	const char *value = (const char *)keyboard_string_descriptors[index];
 	return getStringDescriptor(value, index); // getStringDescriptor returns a static array
@@ -184,7 +248,6 @@ const uint8_t * KeyboardDriver::get_descriptor_device_cb() {
 const uint8_t * KeyboardDriver::get_hid_descriptor_report_cb(uint8_t itf) {
     return keyboard_report_descriptor;
 }
-
 const uint8_t * KeyboardDriver::get_descriptor_configuration_cb(uint8_t index) {
     return keyboard_configuration_descriptor;
 }
@@ -196,7 +259,6 @@ const uint8_t * KeyboardDriver::get_descriptor_device_qualifier_cb() {
 uint16_t KeyboardDriver::GetJoystickMidValue() {
 	return HID_JOYSTICK_MID << 8;
 }
-
 void KeyboardDriver::handleEncoder(GPEvent* e) {
     GPEncoderChangeEvent * encoderEvent = (GPEncoderChangeEvent*)e;
     if ( encoderEvent->direction == 1 ) {
