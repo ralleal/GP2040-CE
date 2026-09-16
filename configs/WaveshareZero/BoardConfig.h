@@ -54,4 +54,18 @@
 #define KEY_BUTTON_A2   HID_KEY_F2            // A2     | ~      | Capture | ~        | 14     | ~      |
 #define KEY_BUTTON_FN   -1                    // Hotkey Function                                        |
 
+// MiSTer cabinet menu button (custom build).
+// A1 is reserved for this feature while Keyboard input mode is active.
+#define MISTER_MENU_SHORT_LONG_ENABLED 1
+#define MISTER_MENU_LONG_PRESS_MS 3000
+#define MISTER_MENU_KEY_PULSE_MS 80
+
+// Short press: Alt+F12 (MiSTer quick core selection).
+// These defines can be changed later for a frontend-specific shortcut.
+#define MISTER_MENU_SHORT_KEY_1 HID_KEY_ALT_LEFT
+#define MISTER_MENU_SHORT_KEY_2 HID_KEY_F12
+
+// Long press: F12 (OSD / current core menu).
+#define MISTER_MENU_LONG_KEY_1 HID_KEY_F12
+
 #endif
