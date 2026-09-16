@@ -38,6 +38,7 @@ jobs:
           mkdir -p "$ROOT/source" "$ROOT/firmware"
           rsync -a \
             --exclude='.git' \
+            --exclude='firmware' \
             --exclude="$ROOT" \
             ./ "$ROOT/source/"
           find firmware -maxdepth 1 -type f -name '*.uf2' -exec cp {} "$ROOT/firmware/" \;
