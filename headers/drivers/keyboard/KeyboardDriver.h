@@ -32,10 +32,19 @@ private:
 	void pressKey(uint8_t code);
     uint8_t getModifier(uint8_t code);
     uint8_t getMultimedia(uint8_t code);
+    void pressMisterMenuShortAction();
+    void pressMisterMenuLongAction();
     uint8_t last_report[CFG_TUD_ENDPOINT0_SIZE] = { };
     uint16_t last_report_size;
     KeyboardReport keyboardReport;
     int8_t volumeChange;
+
+    // State for the custom MiSTer short/long-press menu button.
+    bool misterMenuWasPressed = false;
+    bool misterMenuLongTriggered = false;
+    uint8_t misterMenuPulseType = 0; // 0 = none, 1 = short, 2 = long
+    uint32_t misterMenuPressStartMs = 0;
+    uint32_t misterMenuPulseStartMs = 0;
 };
 
 #endif // _KEYBOARD_DRIVER_H_
