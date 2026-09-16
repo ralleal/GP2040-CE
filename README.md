@@ -24,6 +24,31 @@
   GP2040-CE is compatible with PC, PS3, PS4, PS5, Nintendo Switch, Xbox One, Steam Deck, MiSTer and Android.
 </p>
 
+## MiSTer cabinet customization (Waveshare Zero)
+
+The `mister-cabinet` branch contains a small cabinet-specific customization based on GP2040-CE v0.7.12 for a Waveshare RP2040-Zero running in **Keyboard** input mode.
+
+The customization reserves the logical **A1** input for a non-blocking short/long-press MiSTer menu button:
+
+- **Short press (< 3000 ms):** on release, sends `Left Alt + F12`.
+- **Long press (>= 3000 ms):** sends `F12` as soon as the 3-second threshold is reached, while the button is still held.
+- The generated key/combo is pulsed for **80 ms**.
+- A long press fires only once per physical press; releasing it does not trigger the short action.
+- All other Keyboard-mode inputs keep their normal GP2040-CE behavior.
+- The feature is enabled only for the `WaveshareZero` board configuration.
+
+The physical GPIO is **not hard-coded** in the handler. The Web Configurator still maps a GPIO to logical `A1`; the cabinet configuration uses **GP4 -> A1**. GP5 is left unused. The short/long timing and generated key combinations are firmware constants and therefore are not exposed in Web Config.
+
+Reset is intentionally outside this state machine and is handled separately by the cabinet hardware.
+
+Custom code is limited to:
+
+- `configs/WaveshareZero/BoardConfig.h`
+- `headers/drivers/keyboard/KeyboardDriver.h`
+- `src/drivers/keyboard/KeyboardDriver.cpp`
+
+The behavior was validated on Linux with `evtest`: GP0-GP3 retained their normal keyboard mappings, short A1 presses produced `Alt+F12`, long A1 presses produced a single `F12`, and holding A1 for approximately six seconds did not repeat the long-press action.
+
 ## Links
 
 [Downloads](https://gp2040-ce.info/downloads) | [Installation](https://gp2040-ce.info/installation) | [Wiring](https://gp2040-ce.info/controller-build/wiring) | [Usage](https://gp2040-ce.info/usage) | [FAQ](https://gp2040-ce.info/faq/faq-general) | [GitHub](https://github.com/OpenStickCommunity/GP2040-CE)
