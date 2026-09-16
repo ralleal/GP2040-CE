@@ -1,0 +1,61 @@
+name: Package MiSTer cabinet source and firmware
+
+on:
+  push:
+    branches:
+      - mister-cabinet
+    paths:
+      - '.github/workflows/package-mister-cabinet.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout current source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download validated WaveshareZero firmware artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p firmware
+          gh run download 35138011364 \
+            --repo "${{ github.repository }}" \
+            --name "GP2040-CE - WaveshareZero" \
+            --dir firmware
+
+      - name: Build distribution ZIP
+        run: |
+          set -eu
+          ROOT="GP2040-CE-MiSTer-Cabinet"
+          mkdir -p "$ROOT/source" "$ROOT/firmware"
+          rsync -a \
+            --exclude='.git' \
+            --exclude="$ROOT" \
+            ./ "$ROOT/source/"
+          find firmware -maxdepth 1 -type f -name '*.uf2' -exec cp {} "$ROOT/firmware/" \;
+          cat > "$ROOT/BUILD_INFO.txt" <<EOF
+          GP2040-CE MiSTer cabinet package
+          Source branch: mister-cabinet
+          Source commit: ${{ github.sha }}
+          Firmware target: WaveshareZero
+          Firmware validated build commit: 38334f7377fd3cf3541cc5126137184af2925f06
+          Firmware GitHub Actions run: 35138011364 (attempt 2, success)
+          Base firmware: GP2040-CE v0.7.12
+          EOF
+          zip -r -q GP2040-CE-MiSTer-Cabinet-source-and-firmware.zip "$ROOT"
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: GP2040-CE-MiSTer-Cabinet-source-and-firmware
+          path: GP2040-CE-MiSTer-Cabinet-source-and-firmware.zip
+          if-no-files-found: error
+          retention-days: 90
