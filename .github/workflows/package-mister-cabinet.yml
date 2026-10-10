@@ -12,45 +12,92 @@ permissions:
   actions: read
   contents: read
 
+env:
+  BUILD_TYPE: Release
+
 jobs:
-  package:
+  call-node-workflow:
+    uses: ./.github/workflows/node.js.yml
+
+  build-package:
+    needs: call-node-workflow
     runs-on: ubuntu-22.04
+
     steps:
-      - name: Checkout current source
-        uses: actions/checkout@v4
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
         with:
+          cmake-version: "3.17.x"
+
+      - name: Checkout current source
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
           submodules: recursive
 
-      - name: Download validated WaveshareZero firmware artifact
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Setup Pico SDK pipeline
+        uses: Fortinbra/RaspberryPiPicoBuild@v7
+
+      - name: Download web build artifact
+        uses: actions/download-artifact@v4.1.2
+        with:
+          name: fsData
+          path: ${{ github.workspace }}/lib/httpd/
+
+      - name: Configure WaveshareZero build
+        shell: bash
         run: |
-          mkdir -p firmware
-          gh run download 35138011364 \
-            --repo "${{ github.repository }}" \
-            --name "GP2040-CE - WaveshareZero" \
-            --dir firmware
+          PICO_SDK_PATH="${{ github.workspace }}/pico-sdk" \
+          GP2040_BOARDCONFIG=WaveshareZero \
+          SKIP_WEBBUILD=TRUE \
+          cmake -B "${{ github.workspace }}/build-mister-cabinet" \
+            -DCMAKE_BUILD_TYPE="${{ env.BUILD_TYPE }}"
+
+      - name: Build WaveshareZero firmware
+        shell: bash
+        run: |
+          GP2040_BOARDCONFIG=WaveshareZero \
+          cmake --build "${{ github.workspace }}/build-mister-cabinet" \
+            --config "${{ env.BUILD_TYPE }}" \
+            --parallel 2
 
       - name: Build distribution ZIP
+        shell: bash
         run: |
           set -eu
+
           ROOT="GP2040-CE-MiSTer-Cabinet"
+          UF2_SOURCE="$(find build-mister-cabinet -maxdepth 1 -type f -name 'GP2040-CE_*_WaveshareZero.uf2' -print -quit)"
+          UF2_NAME="GP2040-CE_v0.7.12_WaveshareZero_MiSTerCabinet-Custom.uf2"
+
+          test -n "$UF2_SOURCE"
+
+          rm -rf "$ROOT"
           mkdir -p "$ROOT/source" "$ROOT/firmware"
+
           rsync -a \
             --exclude='.git' \
-            --exclude='firmware' \
+            --exclude='build-mister-cabinet' \
             --exclude="$ROOT" \
             ./ "$ROOT/source/"
-          find firmware -maxdepth 1 -type f -name '*.uf2' -exec cp {} "$ROOT/firmware/" \;
+
+          cp "$UF2_SOURCE" "$ROOT/firmware/$UF2_NAME"
+
+          UF2_SHA256="$(sha256sum "$ROOT/firmware/$UF2_NAME" | awk '{print $1}')"
+
           cat > "$ROOT/BUILD_INFO.txt" <<EOF
           GP2040-CE MiSTer cabinet package
           Source branch: mister-cabinet
           Source commit: ${{ github.sha }}
           Firmware target: WaveshareZero
-          Firmware validated build commit: 38334f7377fd3cf3541cc5126137184af2925f06
-          Firmware GitHub Actions run: 35138011364 (attempt 2, success)
+          Firmware file: $UF2_NAME
+          Firmware SHA256: $UF2_SHA256
           Base firmware: GP2040-CE v0.7.12
+          USB product name: GP2040-CE - Fixed Arcade Buttons
+          Build workflow run: ${{ github.run_id }}
           EOF
+
           zip -r -q GP2040-CE-MiSTer-Cabinet-source-and-firmware.zip "$ROOT"
 
       - name: Upload package
