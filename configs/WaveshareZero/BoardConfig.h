@@ -54,18 +54,23 @@
 #define KEY_BUTTON_A2   HID_KEY_F2            // A2     | ~      | Capture | ~        | 14     | ~      |
 #define KEY_BUTTON_FN   -1                    // Hotkey Function                                        |
 
-// MiSTer cabinet menu button (custom build).
+// MiSTer cabinet multifunction menu button (custom build).
 // A1 is reserved for this feature while Keyboard input mode is active.
-#define MISTER_MENU_SHORT_LONG_ENABLED 1
+#define MISTER_MENU_MULTI_ACTION_ENABLED 1
 #define MISTER_MENU_LONG_PRESS_MS 3000
+#define MISTER_MENU_DOUBLE_CLICK_MS 500
 #define MISTER_MENU_KEY_PULSE_MS 80
 
-// Short press: Alt+F12 (MiSTer quick core selection).
-// These defines can be changed later for a frontend-specific shortcut.
-#define MISTER_MENU_SHORT_KEY_1 HID_KEY_ALT_LEFT
-#define MISTER_MENU_SHORT_KEY_2 HID_KEY_F12
+// Single click: P (common arcade Pause key).
+#define MISTER_MENU_SINGLE_KEY_1 HID_KEY_P
 
-// Long press: F12 (OSD / current core menu).
-#define MISTER_MENU_LONG_KEY_1 HID_KEY_F12
+// Double click: F12 (OSD / current core menu).
+#define MISTER_MENU_DOUBLE_KEY_1 HID_KEY_F12
+
+// Long press: Zaparoo return shortcut.
+#define MISTER_MENU_LONG_KEY_1 HID_KEY_SHIFT_LEFT
+#define MISTER_MENU_LONG_KEY_2 HID_KEY_CONTROL_LEFT
+#define MISTER_MENU_LONG_KEY_3 HID_KEY_ALT_LEFT
+#define MISTER_MENU_LONG_KEY_4 HID_KEY_ALT_RIGHT
 
 #endif
