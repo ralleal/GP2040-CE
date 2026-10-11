@@ -139,9 +139,18 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
 
     misterMenuWasPressed = misterMenuPressed;
 
-    // Keep generated keys active briefly so the host reliably observes them.
+    // Keep generated keys active long enough for MiSTer to reliably observe
+    // each action. P and the long reset/front-end combo need longer holds
+    // than F12, so use per-action pulse durations.
     if (misterMenuPulseType != 0) {
-        if ((uint32_t)(nowMs - misterMenuPulseStartMs) < MISTER_MENU_KEY_PULSE_MS) {
+        uint32_t pulseDurationMs = MISTER_MENU_DOUBLE_PULSE_MS;
+        if (misterMenuPulseType == 1) {
+            pulseDurationMs = MISTER_MENU_SINGLE_PULSE_MS;
+        } else if (misterMenuPulseType == 3) {
+            pulseDurationMs = MISTER_MENU_LONG_PULSE_MS;
+        }
+
+        if ((uint32_t)(nowMs - misterMenuPulseStartMs) < pulseDurationMs) {
             if (misterMenuPulseType == 1) {
                 pressMisterMenuSingleAction();
             } else if (misterMenuPulseType == 2) {

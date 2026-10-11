@@ -17,8 +17,8 @@ Configuração usada no cabinet:
 
 Com esta configuração, o botão ligado ao **GP4** funciona assim:
 
-- **Um clique curto:** aguarda uma janela de **500 ms** para distinguir um eventual duplo clique; se não houver segundo clique, envia `P` durante cerca de **80 ms**.
-- **Duplo clique:** se o segundo toque começar dentro da janela de **500 ms**, envia `F12` ao largar o segundo toque curto. O `P` pendente do primeiro clique é cancelado.
+- **Um clique curto:** aguarda uma janela de **500 ms** para distinguir um eventual duplo clique; se não houver segundo clique, envia `P` durante cerca de **200 ms**.
+- **Duplo clique:** se o segundo toque começar dentro da janela de **500 ms**, envia `F12` durante cerca de **80 ms** ao largar o segundo toque curto. O `P` pendente do primeiro clique é cancelado.
 - **Pressão longa (3 segundos ou mais):** envia `Left Shift + Left Ctrl + Left Alt + Right Alt` assim que atinge os **3 segundos**, sem esperar que o botão seja largado.
 - A combinação da pressão longa é enviada apenas uma vez, mesmo que o botão continue pressionado durante 6 segundos ou mais.
 - Depois de uma pressão longa, largar o botão não envia qualquer outra ação.
@@ -61,7 +61,7 @@ Ao manter o botão pressionado durante **3 segundos**, o firmware envia simultan
 
 Neste cabinet, esta combinação foi confirmada com um teclado físico como o atalho para **abandonar o jogo atual e regressar ao Zaparoo Frontend**.
 
-A combinação é enviada durante cerca de **80 ms**, uma única vez por pressão.
+A combinação é enviada durante cerca de **500 ms**, uma única vez por pressão.
 
 ## Resumo do comportamento
 
@@ -103,4 +103,6 @@ O botão físico de **RESET** do cabinet continua separado desta máquina de est
 - Janela de duplo clique: **500 ms**
 - Debounce do A1: **30 ms**
 - Pressão longa: **3000 ms**
-- Duração dos impulsos de teclado: **80 ms**
+- Duração do impulso single (`P`): **200 ms**
+- Duração do impulso double (`F12`): **80 ms**
+- Duração do impulso long (combo Zaparoo): **500 ms**

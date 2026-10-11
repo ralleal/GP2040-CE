@@ -30,9 +30,9 @@ The `mister-cabinet` branch contains a cabinet-specific customization based on G
 
 The logical **A1** input is reserved for a non-blocking single/double/long-press MiSTer/Zaparoo control button:
 
-- **Single short click:** after a **500 ms** double-click decision window, sends `P` for about **80 ms**. `P` is a common Pause shortcut in MiSTer arcade cores.
-- **Double click:** two short clicks with the second press starting within **500 ms** sends `F12` on the second release, opening the current core OSD. The pending single-click `P` is cancelled.
-- **Long press (>= 3000 ms):** while still held, sends `Left Shift + Left Ctrl + Left Alt + Right Alt` once for about **80 ms**. In this cabinet that shortcut abandons the running game and returns to the Zaparoo frontend. Releasing the button afterwards sends nothing.
+- **Single short click:** after a **500 ms** double-click decision window, sends `P` for about **200 ms**. `P` is a common Pause shortcut in MiSTer arcade cores.
+- **Double click:** two short clicks with the second press starting within **500 ms** sends `F12` for about **80 ms** on the second release, opening the current core OSD. The pending single-click `P` is cancelled.
+- **Long press (>= 3000 ms):** while still held, sends `Left Shift + Left Ctrl + Left Alt + Right Alt` once for about **500 ms**. In this cabinet that shortcut abandons the running game and returns to the Zaparoo frontend. Releasing the button afterwards sends nothing.
 - **First short click + second long hold:** only the long-press Zaparoo shortcut is sent; neither `P` nor `F12` is emitted.
 - Holding the button beyond three seconds does not repeat the long action.
 - The A1 input uses **30 ms software debounce** before edge detection, preventing mechanical switch bounce from being mistaken for extra clicks.
