@@ -64,16 +64,20 @@
 #define MISTER_MENU_DOUBLE_PULSE_MS 80
 #define MISTER_MENU_LONG_PULSE_MS 500
 
-// Single click: P (common arcade Pause key).
-#define MISTER_MENU_SINGLE_KEY_1 HID_KEY_P
+// The MiSTer treats this device as JAMMA (CAFE:0001), so normal arcade
+// keys such as P/Ctrl/Alt are converted before keyboard handling. Use
+// F13-F17 as transport keys and remap them on MiSTer with kbd_cafe_0001.map.
+//
+// Single click transport: F13 -> P on MiSTer.
+#define MISTER_MENU_SINGLE_KEY_1 HID_KEY_F13
 
-// Double click: F12 (OSD / current core menu).
+// Double click: F12 is not consumed by the JAMMA conversion and opens OSD.
 #define MISTER_MENU_DOUBLE_KEY_1 HID_KEY_F12
 
-// Long press: Zaparoo return shortcut.
-#define MISTER_MENU_LONG_KEY_1 HID_KEY_SHIFT_LEFT
-#define MISTER_MENU_LONG_KEY_2 HID_KEY_CONTROL_LEFT
-#define MISTER_MENU_LONG_KEY_3 HID_KEY_ALT_LEFT
-#define MISTER_MENU_LONG_KEY_4 HID_KEY_ALT_RIGHT
+// Long-press transports: F14-F17 -> LShift+LCtrl+LAlt+RAlt on MiSTer.
+#define MISTER_MENU_LONG_KEY_1 HID_KEY_F14
+#define MISTER_MENU_LONG_KEY_2 HID_KEY_F15
+#define MISTER_MENU_LONG_KEY_3 HID_KEY_F16
+#define MISTER_MENU_LONG_KEY_4 HID_KEY_F17
 
 #endif

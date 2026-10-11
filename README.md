@@ -28,22 +28,32 @@
 
 The `mister-cabinet` branch contains a cabinet-specific customization based on GP2040-CE v0.7.12 for a Waveshare RP2040-Zero running in **Keyboard** input mode.
 
-The logical **A1** input is reserved for a non-blocking single/double/long-press MiSTer/Zaparoo control button:
+The cabinet keeps MiSTer's JAMMA handling enabled for device `CAFE:0001`, because that conversion makes the fixed Coin/Start keys work reliably. To keep the multifunction button out of the JAMMA key conversion, the firmware uses unused function keys as **transport keys** and MiSTer remaps them afterwards with `/media/fat/config/kbd_cafe_0001.map`.
 
-- **Single short click:** after a **500 ms** double-click decision window, sends `P` for about **200 ms**. `P` is a common Pause shortcut in MiSTer arcade cores.
-- **Double click:** two short clicks with the second press starting within **500 ms** sends `F12` for about **80 ms** on the second release, opening the current core OSD. The pending single-click `P` is cancelled.
-- **Long press (>= 3000 ms):** while still held, sends `Left Shift + Left Ctrl + Left Alt + Right Alt` once for about **500 ms**. In this cabinet that shortcut abandons the running game and returns to the Zaparoo frontend. Releasing the button afterwards sends nothing.
-- **First short click + second long hold:** only the long-press Zaparoo shortcut is sent; neither `P` nor `F12` is emitted.
-- Holding the button beyond three seconds does not repeat the long action.
-- The A1 input uses **30 ms software debounce** before edge detection, preventing mechanical switch bounce from being mistaken for extra clicks.
-- All other Keyboard-mode inputs keep their normal GP2040-CE behavior.
-- The feature is enabled only for the `WaveshareZero` board configuration.
+Logical **A1** is reserved for the non-blocking single/double/long-press button:
 
-The physical GPIO is **not hard-coded** in the handler. The Web Configurator still maps a GPIO to logical `A1`; the cabinet configuration uses **GP4 -> A1**. The timing and generated actions are firmware constants and are not exposed in Web Config. The normal Keyboard Mapping value assigned to A1 is ignored while this custom feature is enabled.
+- **Single short click:** after the **500 ms** double-click decision window, sends `F13` for about **200 ms**. MiSTer remaps `F13 -> P` for arcade Pause.
+- **Double click:** sends `F12` for about **80 ms** on the second release. F12 passes through the JAMMA conversion and opens/closes the OSD.
+- **Long press (>= 3000 ms):** sends `F14 + F15 + F16 + F17` for about **500 ms**. MiSTer remaps these to `Left Shift + Left Ctrl + Left Alt + Right Alt`, returning to the Zaparoo frontend.
+- **First short click + second long hold:** only the long action is emitted.
+- The A1 input uses **30 ms software debounce**.
+- Holding beyond three seconds does not repeat the long action.
 
-The `P` single-click action can be remapped in MiSTer when a core uses a different Pause convention. For example, the ZX Spectrum core has its own core-level Pause on `F9`, so an Advanced Input Mapping for this fixed keyboard can translate `P` to `F9` for the Spectrum core without changing the firmware.
+Required MiSTer device keyboard remap:
 
-Reset is intentionally outside this state machine and is handled separately by the cabinet hardware.
+```text
+F13 -> P
+F14 -> Left Shift
+F15 -> Left Ctrl
+F16 -> Left Alt
+F17 -> Right Alt
+```
+
+This remap is specific to `CAFE:0001`; it does not change a normal USB keyboard and it does not replace the existing `input_cafe_0001_v3.map` or per-game input maps.
+
+The physical GPIO is not hard-coded in the handler. The cabinet uses **GP4 -> A1** in Web Config. The normal Keyboard Mapping value assigned to A1 is ignored while this custom feature is enabled.
+
+Reset remains outside this state machine and is handled separately by the cabinet hardware.
 
 Custom code is limited to:
 

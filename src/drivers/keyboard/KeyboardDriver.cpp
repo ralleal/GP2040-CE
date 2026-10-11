@@ -126,8 +126,8 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
             misterMenuPulseType = 2;
             misterMenuPulseStartMs = nowMs;
         } else {
-            // First short click: wait before emitting P so a second click can
-            // replace it with F12 without ever sending P.
+            // First short click: wait before emitting the single transport
+            // key so a second click can replace it with F12.
             misterMenuWaitingSecondClick = true;
             misterMenuFirstReleaseMs = nowMs;
         }
@@ -140,8 +140,8 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
     misterMenuWasPressed = misterMenuPressed;
 
     // Keep generated keys active long enough for MiSTer to reliably observe
-    // each action. P and the long reset/front-end combo need longer holds
-    // than F12, so use per-action pulse durations.
+    // each action. The single transport key and long transport chord use
+    // longer holds than F12, so use per-action pulse durations.
     if (misterMenuPulseType != 0) {
         uint32_t pulseDurationMs = MISTER_MENU_DOUBLE_PULSE_MS;
         if (misterMenuPulseType == 1) {
