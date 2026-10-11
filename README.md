@@ -26,18 +26,21 @@
 
 ## MiSTer cabinet customization (Waveshare Zero)
 
-The `mister-cabinet` branch contains a small cabinet-specific customization based on GP2040-CE v0.7.12 for a Waveshare RP2040-Zero running in **Keyboard** input mode.
+The `mister-cabinet` branch contains a cabinet-specific customization based on GP2040-CE v0.7.12 for a Waveshare RP2040-Zero running in **Keyboard** input mode.
 
-The customization reserves the logical **A1** input for a non-blocking short/long-press MiSTer menu button:
+The logical **A1** input is reserved for a non-blocking single/double/long-press MiSTer/Zaparoo control button:
 
-- **Short press (< 3000 ms):** on release, sends `Left Alt + F12`.
-- **Long press (>= 3000 ms):** sends `F12` as soon as the 3-second threshold is reached, while the button is still held.
-- The generated key/combo is pulsed for **80 ms**.
-- A long press fires only once per physical press; releasing it does not trigger the short action.
+- **Single short click:** after a **500 ms** double-click decision window, sends `P` for about **80 ms**. `P` is a common Pause shortcut in MiSTer arcade cores.
+- **Double click:** two short clicks with the second press starting within **500 ms** sends `F12` on the second release, opening the current core OSD. The pending single-click `P` is cancelled.
+- **Long press (>= 3000 ms):** while still held, sends `Left Shift + Left Ctrl + Left Alt + Right Alt` once for about **80 ms**. In this cabinet that shortcut abandons the running game and returns to the Zaparoo frontend. Releasing the button afterwards sends nothing.
+- **First short click + second long hold:** only the long-press Zaparoo shortcut is sent; neither `P` nor `F12` is emitted.
+- Holding the button beyond three seconds does not repeat the long action.
 - All other Keyboard-mode inputs keep their normal GP2040-CE behavior.
 - The feature is enabled only for the `WaveshareZero` board configuration.
 
-The physical GPIO is **not hard-coded** in the handler. The Web Configurator still maps a GPIO to logical `A1`; the cabinet configuration uses **GP4 -> A1**. GP5 is left unused. The short/long timing and generated key combinations are firmware constants and therefore are not exposed in Web Config.
+The physical GPIO is **not hard-coded** in the handler. The Web Configurator still maps a GPIO to logical `A1`; the cabinet configuration uses **GP4 -> A1**. The timing and generated actions are firmware constants and are not exposed in Web Config. The normal Keyboard Mapping value assigned to A1 is ignored while this custom feature is enabled.
+
+The `P` single-click action can be remapped in MiSTer when a core uses a different Pause convention. For example, the ZX Spectrum core has its own core-level Pause on `F9`, so an Advanced Input Mapping for this fixed keyboard can translate `P` to `F9` for the Spectrum core without changing the firmware.
 
 Reset is intentionally outside this state machine and is handled separately by the cabinet hardware.
 
@@ -47,7 +50,7 @@ Custom code is limited to:
 - `headers/drivers/keyboard/KeyboardDriver.h`
 - `src/drivers/keyboard/KeyboardDriver.cpp`
 
-The behavior was validated on Linux with `evtest`: GP0-GP3 retained their normal keyboard mappings, short A1 presses produced `Alt+F12`, long A1 presses produced a single `F12`, and holding A1 for approximately six seconds did not repeat the long-press action.
+The USB product name in Keyboard mode is `GP2040-CE - Fixed Arcade Buttons`.
 
 ## Links
 
