@@ -6,6 +6,12 @@ on:
       - mister-cabinet
     paths:
       - '.github/workflows/package-mister-cabinet.yml'
+      - 'configs/WaveshareZero/BoardConfig.h'
+      - 'headers/drivers/keyboard/KeyboardDriver.h'
+      - 'headers/drivers/keyboard/KeyboardDescriptors.h'
+      - 'src/drivers/keyboard/KeyboardDriver.cpp'
+      - 'README.md'
+      - 'README_MiSTerCabinet-Custom.md'
   workflow_dispatch:
 
 permissions:
