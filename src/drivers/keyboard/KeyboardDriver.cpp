@@ -119,17 +119,27 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
             misterMenuCurrentPressIsSecond = false;
             misterMenuPulseType = 3;
             misterMenuPulseStartMs = nowMs;
-        } else if (misterMenuCurrentPressIsSecond) {
-            // A genuinely short second press completes the double click.
+        } else if (holdMs <= MISTER_MENU_SHORT_PRESS_MAX_MS) {
+            if (misterMenuCurrentPressIsSecond) {
+                // Only a genuinely short second press completes the double
+                // click. Longer releases below the long-press threshold are
+                // intentionally ignored.
+                misterMenuWaitingSecondClick = false;
+                misterMenuCurrentPressIsSecond = false;
+                misterMenuPulseType = 2;
+                misterMenuPulseStartMs = nowMs;
+            } else {
+                // First short click: wait before emitting the single
+                // transport key so a second short click can replace it with
+                // F12.
+                misterMenuWaitingSecondClick = true;
+                misterMenuFirstReleaseMs = nowMs;
+            }
+        } else {
+            // A medium hold is neither a click nor a long press. Cancel any
+            // pending single/double-click state and emit nothing.
             misterMenuWaitingSecondClick = false;
             misterMenuCurrentPressIsSecond = false;
-            misterMenuPulseType = 2;
-            misterMenuPulseStartMs = nowMs;
-        } else {
-            // First short click: wait before emitting the single transport
-            // key so a second click can replace it with F12.
-            misterMenuWaitingSecondClick = true;
-            misterMenuFirstReleaseMs = nowMs;
         }
     }
 
