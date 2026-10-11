@@ -58,47 +58,78 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
 	const KeyboardMapping& keyboardMapping = Storage::getInstance().getKeyboardMapping();
 	releaseAllKeys();
 
-#ifdef MISTER_MENU_SHORT_LONG_ENABLED
+#ifdef MISTER_MENU_MULTI_ACTION_ENABLED
     const uint32_t nowMs = to_ms_since_boot(get_absolute_time());
     const bool misterMenuPressed = gamepad->pressedA1();
+    const bool misterMenuPressEdge = misterMenuPressed && !misterMenuWasPressed;
+    const bool misterMenuReleaseEdge = !misterMenuPressed && misterMenuWasPressed;
 
-    // Start timing on the press edge. Nothing is sent yet because this may
-    // become a long press.
-    if (misterMenuPressed && !misterMenuWasPressed) {
-        misterMenuPressStartMs = nowMs;
-        misterMenuLongTriggered = false;
-        misterMenuPulseType = 0;
+    // A completed first click becomes a single click only after the
+    // double-click window expires. If a new press arrives after the window,
+    // emit the pending single action and treat that press as a fresh click.
+    if (misterMenuWaitingSecondClick &&
+        !misterMenuCurrentPressIsSecond &&
+        (uint32_t)(nowMs - misterMenuFirstReleaseMs) >= MISTER_MENU_DOUBLE_CLICK_MS) {
+        misterMenuWaitingSecondClick = false;
+        misterMenuPulseType = 1;
+        misterMenuPulseStartMs = nowMs;
     }
 
-    // Long press fires while the button is still held.
+    if (misterMenuPressEdge) {
+        misterMenuCurrentPressIsSecond = misterMenuWaitingSecondClick;
+        misterMenuPressStartMs = nowMs;
+        misterMenuLongTriggered = false;
+    }
+
+    // Long press fires once, immediately at the threshold, and cancels any
+    // pending first click. This also covers first-click + second long-hold.
     if (misterMenuPressed && !misterMenuLongTriggered &&
         (uint32_t)(nowMs - misterMenuPressStartMs) >= MISTER_MENU_LONG_PRESS_MS) {
         misterMenuLongTriggered = true;
-        misterMenuPulseType = 2;
+        misterMenuWaitingSecondClick = false;
+        misterMenuCurrentPressIsSecond = false;
+        misterMenuPulseType = 3;
         misterMenuPulseStartMs = nowMs;
     }
 
-    // On release, choose short vs long from the actual hold duration.
-    // Normally a long press has already fired while held; this also covers
-    // the exact threshold boundary if a loop iteration was delayed.
-    if (!misterMenuPressed && misterMenuWasPressed && !misterMenuLongTriggered) {
-        if ((uint32_t)(nowMs - misterMenuPressStartMs) >= MISTER_MENU_LONG_PRESS_MS) {
+    if (misterMenuReleaseEdge && !misterMenuLongTriggered) {
+        const uint32_t holdMs = (uint32_t)(nowMs - misterMenuPressStartMs);
+
+        // Boundary fallback in case the process loop did not observe the
+        // button while it was still held at the exact long-press threshold.
+        if (holdMs >= MISTER_MENU_LONG_PRESS_MS) {
             misterMenuLongTriggered = true;
+            misterMenuWaitingSecondClick = false;
+            misterMenuCurrentPressIsSecond = false;
+            misterMenuPulseType = 3;
+            misterMenuPulseStartMs = nowMs;
+        } else if (misterMenuCurrentPressIsSecond) {
+            // A genuinely short second press completes the double click.
+            misterMenuWaitingSecondClick = false;
+            misterMenuCurrentPressIsSecond = false;
             misterMenuPulseType = 2;
+            misterMenuPulseStartMs = nowMs;
         } else {
-            misterMenuPulseType = 1;
+            // First short click: wait before emitting P so a second click can
+            // replace it with F12 without ever sending P.
+            misterMenuWaitingSecondClick = true;
+            misterMenuFirstReleaseMs = nowMs;
         }
-        misterMenuPulseStartMs = nowMs;
+    }
+
+    if (misterMenuReleaseEdge && misterMenuLongTriggered) {
+        misterMenuCurrentPressIsSecond = false;
     }
 
     misterMenuWasPressed = misterMenuPressed;
 
-    // Keep the generated key/combo active for a short pulse so the host has
-    // ample time to observe it even if a USB report is briefly unavailable.
+    // Keep generated keys active briefly so the host reliably observes them.
     if (misterMenuPulseType != 0) {
         if ((uint32_t)(nowMs - misterMenuPulseStartMs) < MISTER_MENU_KEY_PULSE_MS) {
             if (misterMenuPulseType == 1) {
-                pressMisterMenuShortAction();
+                pressMisterMenuSingleAction();
+            } else if (misterMenuPulseType == 2) {
+                pressMisterMenuDoubleAction();
             } else {
                 pressMisterMenuLongAction();
             }
@@ -123,7 +154,7 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
 	if(gamepad->pressedS2()) 	{ pressKey(keyboardMapping.keyButtonS2); }
 	if(gamepad->pressedL3()) 	{ pressKey(keyboardMapping.keyButtonL3); }
 	if(gamepad->pressedR3()) 	{ pressKey(keyboardMapping.keyButtonR3); }
-#ifndef MISTER_MENU_SHORT_LONG_ENABLED
+#ifndef MISTER_MENU_MULTI_ACTION_ENABLED
 	if(gamepad->pressedA1()) 	{ pressKey(keyboardMapping.keyButtonA1); }
 #endif
 	if(gamepad->pressedA2()) 	{ pressKey(keyboardMapping.keyButtonA2); }
@@ -180,15 +211,21 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
 
 	return false;
 }
-void KeyboardDriver::pressMisterMenuShortAction() {
-#ifdef MISTER_MENU_SHORT_KEY_1
-    pressKey(MISTER_MENU_SHORT_KEY_1);
+void KeyboardDriver::pressMisterMenuSingleAction() {
+#ifdef MISTER_MENU_SINGLE_KEY_1
+    pressKey(MISTER_MENU_SINGLE_KEY_1);
 #endif
-#ifdef MISTER_MENU_SHORT_KEY_2
-    pressKey(MISTER_MENU_SHORT_KEY_2);
+#ifdef MISTER_MENU_SINGLE_KEY_2
+    pressKey(MISTER_MENU_SINGLE_KEY_2);
 #endif
-#ifdef MISTER_MENU_SHORT_KEY_3
-    pressKey(MISTER_MENU_SHORT_KEY_3);
+}
+
+void KeyboardDriver::pressMisterMenuDoubleAction() {
+#ifdef MISTER_MENU_DOUBLE_KEY_1
+    pressKey(MISTER_MENU_DOUBLE_KEY_1);
+#endif
+#ifdef MISTER_MENU_DOUBLE_KEY_2
+    pressKey(MISTER_MENU_DOUBLE_KEY_2);
 #endif
 }
 
@@ -201,6 +238,9 @@ void KeyboardDriver::pressMisterMenuLongAction() {
 #endif
 #ifdef MISTER_MENU_LONG_KEY_3
     pressKey(MISTER_MENU_LONG_KEY_3);
+#endif
+#ifdef MISTER_MENU_LONG_KEY_4
+    pressKey(MISTER_MENU_LONG_KEY_4);
 #endif
 }
 
