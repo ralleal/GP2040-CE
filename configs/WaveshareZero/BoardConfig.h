@@ -57,8 +57,8 @@
 // MiSTer cabinet multifunction menu button (custom build).
 // A1 is reserved for this feature while Keyboard input mode is active.
 #define MISTER_MENU_MULTI_ACTION_ENABLED 1
-#define MISTER_MENU_LONG_PRESS_MS 3000
-#define MISTER_MENU_DOUBLE_CLICK_MS 500
+#define MISTER_MENU_LONG_PRESS_MS 2000
+#define MISTER_MENU_DOUBLE_CLICK_MS 350
 #define MISTER_MENU_DEBOUNCE_MS 30
 #define MISTER_MENU_SINGLE_PULSE_MS 200
 #define MISTER_MENU_DOUBLE_PULSE_MS 80

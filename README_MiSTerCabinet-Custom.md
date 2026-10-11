@@ -47,12 +47,12 @@ Assim, Coin/Start continuam a beneficiar do modo JAMMA, enquanto o botão multif
 
 ## Funções do botão
 
-- **Um clique curto:** aguarda **500 ms** para excluir duplo clique e envia `F13` durante cerca de **200 ms**. No MiSTer, `F13` é convertido em `P` para Pause.
+- **Um clique curto:** aguarda **350 ms** para excluir duplo clique e envia `F13` durante cerca de **200 ms**. No MiSTer, `F13` é convertido em `P` para Pause.
 - **Duplo clique:** envia `F12` durante cerca de **80 ms** ao largar o segundo toque curto. Abre/fecha o OSD.
-- **Pressão longa (3 segundos ou mais):** envia `F14 + F15 + F16 + F17` durante cerca de **500 ms**. No MiSTer são convertidas em `Left Shift + Left Ctrl + Left Alt + Right Alt`, para abandonar o jogo e regressar ao Zaparoo Frontend.
+- **Pressão longa (2 segundos ou mais):** envia `F14 + F15 + F16 + F17` durante cerca de **500 ms**. No MiSTer são convertidas em `Left Shift + Left Ctrl + Left Alt + Right Alt`, para abandonar o jogo e regressar ao Zaparoo Frontend.
 - A pressão longa dispara uma única vez.
 - Depois de uma pressão longa, largar o botão não envia outra ação.
-- Primeiro clique curto + segundo toque mantido por 3 segundos ou mais: é enviada apenas a ação longa.
+- Primeiro clique curto + segundo toque mantido por 2 segundos ou mais: é enviada apenas a ação longa.
 - O input **A1 tem debounce por software de 30 ms**.
 
 ## Botões fixos Coin/Start
@@ -83,9 +83,9 @@ O botão físico de **RESET** continua separado desta máquina de estados.
 - Modo: **Keyboard**
 - USB: **CAFE:0001**
 - Produto USB: **GP2040-CE - Fixed Arcade Buttons**
-- Janela de duplo clique: **500 ms**
+- Janela de duplo clique: **350 ms**
 - Debounce A1: **30 ms**
-- Pressão longa: **3000 ms**
+- Pressão longa: **2000 ms**
 - Impulso single (`F13`): **200 ms**
 - Impulso double (`F12`): **80 ms**
 - Impulso long (`F14-F17`): **500 ms**
