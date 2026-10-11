@@ -35,6 +35,7 @@ The logical **A1** input is reserved for a non-blocking single/double/long-press
 - **Long press (>= 3000 ms):** while still held, sends `Left Shift + Left Ctrl + Left Alt + Right Alt` once for about **80 ms**. In this cabinet that shortcut abandons the running game and returns to the Zaparoo frontend. Releasing the button afterwards sends nothing.
 - **First short click + second long hold:** only the long-press Zaparoo shortcut is sent; neither `P` nor `F12` is emitted.
 - Holding the button beyond three seconds does not repeat the long action.
+- The A1 input uses **30 ms software debounce** before edge detection, preventing mechanical switch bounce from being mistaken for extra clicks.
 - All other Keyboard-mode inputs keep their normal GP2040-CE behavior.
 - The feature is enabled only for the `WaveshareZero` board configuration.
 

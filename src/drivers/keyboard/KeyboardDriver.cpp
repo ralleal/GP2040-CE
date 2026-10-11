@@ -60,15 +60,31 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
 
 #ifdef MISTER_MENU_MULTI_ACTION_ENABLED
     const uint32_t nowMs = to_ms_since_boot(get_absolute_time());
-    const bool misterMenuPressed = gamepad->pressedA1();
+    const bool misterMenuRawNow = gamepad->pressedA1();
+
+    // Debounce A1 before the single/double/long state machine. A raw state
+    // must remain unchanged for MISTER_MENU_DEBOUNCE_MS before it becomes
+    // the logical button state used for edge detection.
+    if (misterMenuRawNow != misterMenuRawPressed) {
+        misterMenuRawPressed = misterMenuRawNow;
+        misterMenuRawChangeMs = nowMs;
+    }
+
+    if (misterMenuDebouncedPressed != misterMenuRawPressed &&
+        (uint32_t)(nowMs - misterMenuRawChangeMs) >= MISTER_MENU_DEBOUNCE_MS) {
+        misterMenuDebouncedPressed = misterMenuRawPressed;
+    }
+
+    const bool misterMenuPressed = misterMenuDebouncedPressed;
     const bool misterMenuPressEdge = misterMenuPressed && !misterMenuWasPressed;
     const bool misterMenuReleaseEdge = !misterMenuPressed && misterMenuWasPressed;
 
     // A completed first click becomes a single click only after the
-    // double-click window expires. If a new press arrives after the window,
-    // emit the pending single action and treat that press as a fresh click.
+    // double-click window expires. Do not expire it while a raw second press
+    // is already in progress but is still waiting to pass debounce.
     if (misterMenuWaitingSecondClick &&
         !misterMenuCurrentPressIsSecond &&
+        !misterMenuRawPressed &&
         (uint32_t)(nowMs - misterMenuFirstReleaseMs) >= MISTER_MENU_DOUBLE_CLICK_MS) {
         misterMenuWaitingSecondClick = false;
         misterMenuPulseType = 1;

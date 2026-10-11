@@ -41,11 +41,16 @@ private:
     int8_t volumeChange;
 
     // State for the custom MiSTer single/double/long-press menu button.
+    // A1 is debounced before edge detection so mechanical switch bounce
+    // cannot be mistaken for a double click.
+    bool misterMenuRawPressed = false;
+    bool misterMenuDebouncedPressed = false;
     bool misterMenuWasPressed = false;
     bool misterMenuLongTriggered = false;
     bool misterMenuWaitingSecondClick = false;
     bool misterMenuCurrentPressIsSecond = false;
     uint8_t misterMenuPulseType = 0; // 0 = none, 1 = single, 2 = double, 3 = long
+    uint32_t misterMenuRawChangeMs = 0;
     uint32_t misterMenuPressStartMs = 0;
     uint32_t misterMenuFirstReleaseMs = 0;
     uint32_t misterMenuPulseStartMs = 0;

@@ -23,6 +23,7 @@ Com esta configuração, o botão ligado ao **GP4** funciona assim:
 - A combinação da pressão longa é enviada apenas uma vez, mesmo que o botão continue pressionado durante 6 segundos ou mais.
 - Depois de uma pressão longa, largar o botão não envia qualquer outra ação.
 - Se houver um primeiro clique curto e o segundo toque for mantido por 3 segundos ou mais, é enviada **apenas** a ação longa; não é enviado `P` nem `F12`.
+- O input **A1 tem debounce por software de 30 ms** antes da deteção de press/release, para impedir que o ressalto mecânico do microswitch seja interpretado como cliques adicionais.
 
 Também foi alterado o nome do produto anunciado pelo USB em modo Keyboard para **`GP2040-CE - Fixed Arcade Buttons`**.
 
@@ -100,5 +101,6 @@ O botão físico de **RESET** do cabinet continua separado desta máquina de est
 - Modo de utilização: **Keyboard**
 - Destino: **cabinet MiSTer FPGA / Zaparoo**
 - Janela de duplo clique: **500 ms**
+- Debounce do A1: **30 ms**
 - Pressão longa: **3000 ms**
 - Duração dos impulsos de teclado: **80 ms**
