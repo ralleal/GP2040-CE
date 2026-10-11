@@ -32,7 +32,7 @@ The cabinet keeps MiSTer's JAMMA handling enabled for device `CAFE:0001`, becaus
 
 Logical **A1** is reserved for the non-blocking single/double/long-press button:
 
-- **Single short click:** after the **350 ms** double-click decision window, sends `F13` for about **200 ms**. MiSTer remaps `F13 -> P` for arcade Pause.
+- **Single short click:** after the **300 ms** double-click decision window, sends `F13` for about **200 ms**. MiSTer remaps `F13 -> P` for arcade Pause.
 - **Double click:** sends `F12` for about **80 ms** on the second release. F12 passes through the JAMMA conversion and opens/closes the OSD.
 - **Long press (>= 2000 ms):** sends `F14 + F15 + F16 + F17` for about **500 ms**. MiSTer remaps these to `Left Shift + Left Ctrl + Left Alt + Right Alt`, returning to the Zaparoo frontend.
 - **First short click + second long hold:** only the long action is emitted.
