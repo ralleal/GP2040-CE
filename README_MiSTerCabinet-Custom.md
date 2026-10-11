@@ -8,14 +8,16 @@ Ficheiro de firmware:
 
 ## Configuração do cabinet
 
-O controlador fixo está em **Keyboard Mode** e o MiSTer mantém o tratamento JAMMA para o dispositivo USB `CAFE:0001`:
+O controlador fixo está em **Keyboard Mode** e apresenta-se ao MiSTer com o identificador USB **VID:PID `CAFE:0001`** (`VID=0xCAFE`, `PID=0x0001`). Este par identifica este tipo de controlador USB no MiSTer.
+
+O tratamento JAMMA deve manter-se ativo:
 
 ```ini
 jamma_vid=0xCAFE
 jamma_pid=0x0001
 ```
 
-Isto é mantido porque faz com que os botões fixos Coin/Start funcionem corretamente nos jogos.
+Isto mantém os botões fixos Coin/Start a funcionar corretamente nos jogos.
 
 GPIO usado pelo botão multifunções:
 
@@ -33,7 +35,11 @@ double -> F12
 long   -> F14 + F15 + F16 + F17
 ```
 
-Depois, no MiSTer, o ficheiro específico deste dispositivo `/media/fat/config/kbd_cafe_0001.map` faz:
+É também **obrigatório** copiar para o MiSTer o ficheiro binário:
+
+`/media/fat/config/kbd_cafe_0001.map`
+
+Esse mapa é específico do dispositivo `CAFE:0001` e faz:
 
 ```text
 F13 -> P
