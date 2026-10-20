@@ -51,6 +51,69 @@ F17 -> Right Alt
 
 Assim, Coin/Start continuam a beneficiar do modo JAMMA, enquanto o botão multifunções volta a comportar-se como teclado normal depois dessa conversão.
 
+## Instalação do mapa obrigatório
+
+O ZIP `GP2040-CE-MiSTer-Cabinet-source-and-firmware.zip` inclui:
+
+- `firmware/`: firmware UF2 para a Waveshare RP2040-Zero.
+- `config/kbd_cafe_0001.map`: mapa binário pronto a instalar (256 bytes).
+- `source/`: código-fonte, gerador e testes.
+- `BUILD_INFO.txt`: commit e SHA256 do firmware e do mapa.
+
+Depois de extrair o ZIP, copiar **apenas** `config/kbd_cafe_0001.map` para
+`/media/fat/config/kbd_cafe_0001.map` no cartão do MiSTer. Se já existir um
+ficheiro com esse nome, guardar primeiro uma cópia de segurança: esta instalação
+substitui os remapeamentos de teclado desse dispositivo. Não substituir a pasta
+`config` inteira. Manter `jamma_vid=0xCAFE`, `jamma_pid=0x0001`,
+`input_cafe_0001_v3.map` e todos os mapas por jogo existentes.
+
+Comparar o SHA256 do ficheiro copiado (`sha256sum /media/fat/config/kbd_cafe_0001.map`)
+com `Keyboard map SHA256` em `BUILD_INFO.txt`. Reiniciar o MiSTer para recarregar
+o mapa de teclado. O duplo clique continua a enviar F12 sem remapeamento.
+Para reverter, restaurar a cópia anterior (ou remover apenas este mapa se antes
+não existia) e reiniciar; sem este mapa o single/long custom deixa de funcionar.
+
+### Geração reproduzível e formato
+
+Na raiz do código-fonte, com Python 3, sem dependências externas:
+
+```sh
+python3 scripts/generate_mister_kbd_map.py config/kbd_cafe_0001.map
+python3 tests/test_mister_kbd_map.py
+```
+
+O gerador escreve exatamente 256 bytes, sem cabeçalho: uma tabela `uint8_t[256]`
+indexada pelo código **Linux EV_KEY**, não pelo USB HID usage emitido pelo firmware.
+Cada byte é o código Linux de destino; zero mantém o código original. Como cada
+entrada tem um byte, não há dependência de endianness. Só cinco bytes são não nulos:
+
+| Origem | Índice Linux (decimal / hex) | Destino | Byte (decimal / hex) |
+|---|---|---|---|
+| F13 | 183 / B7 | P | 25 / 19 |
+| F14 | 184 / B8 | Left Shift | 42 / 2A |
+| F15 | 185 / B9 | Left Ctrl | 29 / 1D |
+| F16 | 186 / BA | Left Alt | 56 / 38 |
+| F17 | 187 / BB | Right Alt | 100 / 64 |
+
+Formato confirmado em [Main_MiSTer `input.cpp`](https://github.com/MiSTer-devel/Main_MiSTer/blob/63186a34544fccb3c0755856a55670d1a0a8daf9/input.cpp):
+`kbdmap[256]`, `get_kbdmap_name`, `finish_map_setting` e `input_cb`.
+[`FileSaveConfig` / `FileLoadConfig`](https://github.com/MiSTer-devel/Main_MiSTer/blob/63186a34544fccb3c0755856a55670d1a0a8daf9/file_io.cpp)
+guardam/carregam os bytes diretamente. Os códigos estão definidos na ABI Linux
+[`input-event-codes.h`](https://github.com/torvalds/linux/blob/v6.12/include/uapi/linux/input-event-codes.h).
+
+No processamento do MiSTer, `QUIRK_JAMMA` converte Coin/Start em códigos de joystick
+antes de chamar `input_cb`. F13–F17 não constam dessa tabela JAMMA e chegam ao
+remapeamento de teclado, aplicado uma única vez a códigos inferiores a 256.
+Por isso P e os modificadores resultantes não voltam a passar pela conversão JAMMA.
+Os eventos de libertação usam o mesmo mapa; o valor press/release/repeat é preservado.
+
+O teste offline compara os 256 bytes com um resultado independente, verifica a
+reprodutibilidade e as teclas configuradas em `BoardConfig.h`, e cobre press/release,
+F12 e a passagem dos códigos Coin/Start. A CI também verifica o mapa e o SHA256
+**dentro do ZIP** antes do upload. Isto valida o contrato binário e a consistência
+com o firmware; não substitui testes de USB/GPIO nem confirma a versão/configuração
+do MiSTer instalado no cabinet.
+
 ## Funções do botão
 
 - **Um clique curto (até 500 ms):** aguarda **300 ms** para excluir duplo clique e envia `F13` durante cerca de **200 ms**. No MiSTer, `F13` é convertido em `P` para Pause.

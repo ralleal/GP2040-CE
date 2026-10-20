@@ -10,6 +10,8 @@ on:
       - 'headers/drivers/keyboard/KeyboardDriver.h'
       - 'headers/drivers/keyboard/KeyboardDescriptors.h'
       - 'src/drivers/keyboard/KeyboardDriver.cpp'
+      - 'scripts/generate_mister_kbd_map.py'
+      - 'tests/test_mister_kbd_map.py'
       - 'README.md'
       - 'README_MiSTerCabinet-Custom.md'
   workflow_dispatch:
@@ -41,6 +43,9 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           submodules: recursive
+
+      - name: Validate MiSTer keyboard map
+        run: python3 tests/test_mister_kbd_map.py
 
       - name: Setup Pico SDK pipeline
         uses: Fortinbra/RaspberryPiPicoBuild@v7
@@ -80,7 +85,7 @@ jobs:
           test -n "$UF2_SOURCE"
 
           rm -rf "$ROOT"
-          mkdir -p "$ROOT/source" "$ROOT/firmware"
+          mkdir -p "$ROOT/source" "$ROOT/firmware" "$ROOT/config"
 
           rsync -a \
             --exclude='.git' \
@@ -89,6 +94,9 @@ jobs:
             ./ "$ROOT/source/"
 
           cp "$UF2_SOURCE" "$ROOT/firmware/$UF2_NAME"
+
+          python3 scripts/generate_mister_kbd_map.py "$ROOT/config/kbd_cafe_0001.map"
+          KBD_SHA256="$(sha256sum "$ROOT/config/kbd_cafe_0001.map" | awk '{print $1}')"
 
           UF2_SHA256="$(sha256sum "$ROOT/firmware/$UF2_NAME" | awk '{print $1}')"
 
@@ -99,12 +107,35 @@ jobs:
           Firmware target: WaveshareZero
           Firmware file: $UF2_NAME
           Firmware SHA256: $UF2_SHA256
+          Keyboard map file: config/kbd_cafe_0001.map
+          Keyboard map install path: /media/fat/config/kbd_cafe_0001.map
+          Keyboard map SHA256: $KBD_SHA256
           Base firmware: GP2040-CE v0.7.12
           USB product name: GP2040-CE - Fixed Arcade Buttons
           Build workflow run: ${{ github.run_id }}
           EOF
 
+          rm -f GP2040-CE-MiSTer-Cabinet-source-and-firmware.zip
           zip -r -q GP2040-CE-MiSTer-Cabinet-source-and-firmware.zip "$ROOT"
+
+      - name: Verify packaged keyboard map
+        shell: bash
+        run: |
+          python3 - <<'PYTHON'
+          import hashlib
+          import zipfile
+          from pathlib import Path
+          from scripts.generate_mister_kbd_map import generate_map
+
+          root = "GP2040-CE-MiSTer-Cabinet"
+          with zipfile.ZipFile(root + "-source-and-firmware.zip") as package:
+              data = package.read(root + "/config/kbd_cafe_0001.map")
+              assert data == generate_map(), "Packaged keyboard map differs from generator"
+              assert len(data) == 256
+              info = package.read(root + "/BUILD_INFO.txt").decode()
+              assert "Keyboard map SHA256: " + hashlib.sha256(data).hexdigest() in info
+              assert package.read(root + "/source/scripts/generate_mister_kbd_map.py") == Path("scripts/generate_mister_kbd_map.py").read_bytes()
+          PYTHON
 
       - name: Upload package
         uses: actions/upload-artifact@v4
