@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/mister-menu-tests.yml'
       - 'tests/**'
+      - 'scripts/generate_mister_kbd_map.py'
+      - '.github/workflows/package-mister-cabinet.yml'
       - 'src/drivers/keyboard/KeyboardDriver.cpp'
       - 'headers/drivers/keyboard/KeyboardDriver.h'
       - 'configs/WaveshareZero/BoardConfig.h'
@@ -13,6 +15,8 @@ on:
     paths:
       - '.github/workflows/mister-menu-tests.yml'
       - 'tests/**'
+      - 'scripts/generate_mister_kbd_map.py'
+      - '.github/workflows/package-mister-cabinet.yml'
       - 'src/drivers/keyboard/KeyboardDriver.cpp'
       - 'headers/drivers/keyboard/KeyboardDriver.h'
       - 'configs/WaveshareZero/BoardConfig.h'
@@ -28,3 +32,5 @@ jobs:
       - uses: actions/checkout@v4.1.1
       - name: Test production A1 state machine
         run: python3 tests/run_mister_menu_tests.py
+      - name: Test MiSTer keyboard map contract
+        run: python3 tests/test_mister_kbd_map.py
