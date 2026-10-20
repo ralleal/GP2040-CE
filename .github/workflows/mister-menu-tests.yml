@@ -1,0 +1,30 @@
+name: MiSTer menu regression tests
+
+on:
+  push:
+    branches: [mister-cabinet]
+    paths:
+      - '.github/workflows/mister-menu-tests.yml'
+      - 'tests/**'
+      - 'src/drivers/keyboard/KeyboardDriver.cpp'
+      - 'headers/drivers/keyboard/KeyboardDriver.h'
+      - 'configs/WaveshareZero/BoardConfig.h'
+  pull_request:
+    paths:
+      - '.github/workflows/mister-menu-tests.yml'
+      - 'tests/**'
+      - 'src/drivers/keyboard/KeyboardDriver.cpp'
+      - 'headers/drivers/keyboard/KeyboardDriver.h'
+      - 'configs/WaveshareZero/BoardConfig.h'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-tests:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4.1.1
+      - name: Test production A1 state machine
+        run: python3 tests/run_mister_menu_tests.py

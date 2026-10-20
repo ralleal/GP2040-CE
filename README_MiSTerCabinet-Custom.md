@@ -61,6 +61,7 @@ Assim, Coin/Start continuam a beneficiar do modo JAMMA, enquanto o botão multif
 - Depois de uma pressão longa, largar o botão não envia outra ação.
 - Primeiro clique curto + segundo toque mantido por 2 segundos ou mais: é enviada apenas a ação longa.
 - O input **A1 tem debounce por software de 30 ms**.
+- A janela de duplo clique conta desde a libertação confirmada pelo debounce do primeiro toque até ao início da pressão física estável do segundo. O intervalo tem de ser **inferior a 300 ms**: aos 300 ms a janela já expirou. Um toque iniciado antes do limite continua válido se o debounce de 30 ms terminar depois; bounce reinicia a estabilização e não prolonga a janela.
 
 ## Botões fixos Coin/Start
 
@@ -97,3 +98,20 @@ O botão físico de **RESET** continua separado desta máquina de estados.
 - Impulso single (`F13`): **200 ms**
 - Impulso double (`F12`): **80 ms**
 - Impulso long (`F14-F17`): **500 ms**
+
+## Testes de regressão
+
+Com Python 3 e um compilador C++17 no host, executar na raiz do repositório:
+
+```sh
+python3 tests/run_mister_menu_tests.py
+```
+
+A suite compila diretamente o bloco A1 de `KeyboardDriver.cpp`, os seus campos
+de estado e métodos de atalhos, usando as constantes de `WaveshareZero/BoardConfig.h`.
+Apenas o relógio, o input e a recolha das teclas são simulados; não há uma cópia da
+máquina de estados nos testes. Cobre os limites de 299/300/301 ms, debounce a
+atravessar o prazo, bounce, pausas no processamento, pressões de 500/501 e
+1999/2000 ms, duração dos impulsos, disparo único da pressão longa e rollover do
+relógio de 32 bits. O workflow `MiSTer menu regression tests` executa a suite em CI.
+Estes testes não validam GPIO, transmissão USB ou comportamento físico no MiSTer.

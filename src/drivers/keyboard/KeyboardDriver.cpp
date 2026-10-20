@@ -80,11 +80,14 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
     const bool misterMenuReleaseEdge = !misterMenuPressed && misterMenuWasPressed;
 
     // A completed first click becomes a single click only after the
-    // double-click window expires. Do not expire it while a raw second press
-    // is already in progress but is still waiting to pass debounce.
+    // double-click window expires. Only a raw press that started inside the
+    // window may defer expiry while waiting to pass debounce. Use its raw
+    // timestamp so debounce neither shortens nor extends the click window.
+    const bool misterMenuSecondPressInWindow = misterMenuRawPressed &&
+        (uint32_t)(misterMenuRawChangeMs - misterMenuFirstReleaseMs) < MISTER_MENU_DOUBLE_CLICK_MS;
     if (misterMenuWaitingSecondClick &&
         !misterMenuCurrentPressIsSecond &&
-        !misterMenuRawPressed &&
+        !misterMenuSecondPressInWindow &&
         (uint32_t)(nowMs - misterMenuFirstReleaseMs) >= MISTER_MENU_DOUBLE_CLICK_MS) {
         misterMenuWaitingSecondClick = false;
         misterMenuPulseType = 1;
@@ -92,7 +95,7 @@ bool KeyboardDriver::process(Gamepad * gamepad) {
     }
 
     if (misterMenuPressEdge) {
-        misterMenuCurrentPressIsSecond = misterMenuWaitingSecondClick;
+        misterMenuCurrentPressIsSecond = misterMenuWaitingSecondClick && misterMenuSecondPressInWindow;
         misterMenuPressStartMs = nowMs;
         misterMenuLongTriggered = false;
     }
